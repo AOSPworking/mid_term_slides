@@ -15,164 +15,117 @@
 %
 % This work consists of all the *.tex and *.sty files in
 %   https://github.com/TJ-CSCCG/Tongji-Beamer
-\section{系统分析}
+\section{系统背景}
     % “图片文字并排” 示例
-    \begin{frame}{内卷行为归因系统}
+    \begin{frame}{AOSP Frameworks 项目概述}
         \begin{columns}
-            \column{.35\textwidth}
+            \column{.4\textwidth}
             \begin{figure}
-                \centering \includegraphics[width=2in]{contents/figure/factor-analyzer.png}
-                \caption{归因系统架构}
-                \label{fig:factor-analyzer}
+                \centering \includegraphics[width=1.45in, height=2in]{contents/figure/AOSP.png}
+                \caption{AOSP 项目整体架构}
+                \label{fig:aosp}
             \end{figure}
 
-            \column{.6\textwidth}
+            \column{.65\textwidth}
             \begin{itemize}
-                \item 校内监控系统：接入校内系统，使用过往录像作为归因系统模型训练数据集。
-                \item 特征提取器：项目提出了数十种内卷特征类型。提取器要求人工为部分数据集标记标签。
-                \item 内卷归因器：阅读历史文献，得出数十种内卷成因，构建内卷特征到成因的映射函数。
-                \item 报告持续生成器：开发该系统的报告生成器，提升用户体验。
+                \item Framework 是建立在底层 Android Runtime 和 C/C++ Lib 以及更底层 HAL 之上的，面向应用开发的框架层。 Framework 作为开发者可以直接且完全访问的 Android 系统应用使用的框架 API[1]，封装了整个 Android 操作系统的所有功能。
+                \item Framework 共由 67 个仓库组成\cite{repo-crawler}，主要语言为 Java 以及 C/C++，大版本间有效提交数约为 10 万次，其中 framework/base 是体量最庞大且作用最重要的仓库之一。
             \end{itemize}
         \end{columns}
     \end{frame}
 
     % “图片文字垂直” 示例
-    \begin{frame}{内卷识别器}
+    \begin{frame}{soong 构建系统概述}
         \begin{figure}
             \centering
-            \includegraphics[width=.4\textwidth]{contents/figure/data-detector.png}
-            \caption{识别器架构}
-            \label{fig:data-detector}
+            \includegraphics[width=.8\textwidth]{contents/figure/soong.png}
+            \label{fig:soong}
         \end{figure}
 
         \begin{itemize}
-            \item \small 复用归因系统中有关图像处理的 Phase，编写软硬件接口，对接校内监控系统终端设备。
-            \item \small 识别器特征提取结果将上传至我校私有云上，方便监管与处理。
+            \item \small soong 下生成的完整 Manifest 文件达 2.7 GB，进一步说明 AOSP 体量庞大，难以完全分析。
+            \item \small soong 使用底层构建系统 ninja，后者的输入由 soong 生成，具备一定的结构，方便进行基于文本的处理。
         \end{itemize}
     \end{frame}
 
     % “多图片文字混合” 示例
-    \begin{frame}{内卷信息收集与行为防范系统}
-        \begin{columns}
-            \column{.4\textwidth}
-            \begin{figure}
-                \centering
-                \includegraphics[width=\textwidth]{contents/figure/data-detector.png}
-                \caption{识别器架构}
-                \label{fig:data-detector-2}
-            \end{figure}
+    \begin{frame}{git 版本控制系统简述}
+        \begin{block}{AOSP 下的 git}
+            \begin{itemize}
+                \item AOSP 中的仓库均使用 git 作为版本控制系统。
+                \item git 中存储了每一次提交的代码变更。如：git diff <a-id> <b-id> 可以得到 a 与 b 版本间的文本差异。
+                \item 关于变更，git 仅存储了文本 / 二进制差异，并不存在更复杂的、有关源代码的数据结构。
+            \end{itemize}
+        \end{block}
 
-            \column{.3\textwidth}
-            \begin{figure}
-                \centering
-                \includegraphics[width=\textwidth]{contents/figure/collector-part-1.png}
-                \caption{信息收集系统}
-                \label{fig:collector-part-1}
-            \end{figure}
+        \small 对于软件变更分析，通常需要基于给定的两个不同的版本展开分析。对于 git 版本控制系统而言，则是需要给出两个可用于代表提交的 Hash ID。
 
-            \column{.3\textwidth}
-            \begin{figure}
-                \centering
-                 \includegraphics[width=\textwidth]{contents/figure/collector-part-2.png}
-                \caption{行为防范系统}
-                \label{fig:collector-part-2}
-            \end{figure}
-        \end{columns}
-
-        \small 信息收集系统使用一个服务作为所有监控终端设备的 “注册中心”，提供鉴权、心跳检查等能力。行为规范系统复用了归因系统中有关因素分析的 Phase，以此作为决策树的判断基础。
+        \small 通过 git 内部的存储结构，可以获得两版本间涉及变更的文件名以及变更内容。这有助于进一步展开对模块间以及模块内部的依赖分析。
     \end{frame}
 
-
-\section{合理性分析}
+\section{解决方法与过程}
     % “数学” 与 “公式” 示例
-    \begin{frame}{专有名词释义}
-        \begin{definition}[永夜势力]
-            考虑一所高校，其中永夜村民的数量除以学生总数的值。
-        \end{definition}
-        \begin{theorem}[永夜定理]
-            考虑一所高校，在不存在干涉的情况下，永夜势力在小于 1 前，恒呈指数型增长。
-        \end{theorem}
-        \begin{theorem}[永夜方程]
-            考虑一所高校，人为干涉存在 x 的概率无效。x 是下列方程的解，其中 n 为全校学生总数。
-        \end{theorem}
-
-        \begin{equation}
-            \begin{vmatrix}
-            \begin{bmatrix}
-                    x & \Phi(\pi) \\
-                    \sum_{i = 1}^n xi & \exp(xi)
-            \end{bmatrix}
-            \begin{bmatrix}
-                    1 & \cdots & n \\
-                    x\Phi(e) & \cdots & x\Phi^n(e^n)
-            \end{bmatrix}
-            \end{vmatrix} = \dfrac{\pi}{x}
-        \end{equation}
+    \begin{frame}{数据预处理}
+        \begin{block}{manifest 精简}
+            \small 使用 Python 进行文本处理，将 soong 输出的 build.ninja 文件中与 frameworks 无关的构建过程剔除。\cite{manifest-refinement}
+        \end{block}
+        \begin{block}{file-package-repository 对应关系确立}
+            \small 通过 Shell 获取 AOSP Frameworks 下 Android.bp 文件。\cite{bp-collector}利用 AOSP soong 中的 bp/parser 工具解析 *.bp 文件，使用 golang 建立从文件到模块以及仓库的关系。\cite{pkg-repo-tool}
+        \end{block}
+        \begin{columns}
+            \column{.5\textwidth}
+            \begin{figure}
+                \centering \includegraphics[width=2in]{contents/figure/pkg_repo_tool.png}
+                \label{fig:pkg-repo-tool}
+            \end{figure}
+            \column{.5\textwidth}
+            \begin{figure}
+                \centering \includegraphics[width=2in]{contents/figure/pkg_repo_tool_readme.png}
+                \label{fig:pkg-repo-tool-readme}
+            \end{figure}
+        \end{columns}
     \end{frame}
 
     % “简单公式” 示例
-    \begin{frame}{负载分析}
-        系统在设计时进行了计算下沉，分离图像处理的多个步骤，实现计算的高效性。
-
-        假设 $id \in [1850001, 1859999]$，识别器与分析器共有 $m$ 个机器，第 $i$ 个机器负责 $[1850001 + i \times \frac{9999}{m}, 1859999 + (i + 1) \times \frac{9999}{100}]$ 个单位。
-
-        识别层机器会发送分析层机器需要的特定记录到存储中。存储中每个节点大小为 16 KB，由于一条记录占据 4 00B 的空间，有：
-
-        $$
-        Node = \dfrac{16 \times 1024 B}{400 B} \approx 16
-        $$
-
-        假设 $t$ 为一次操作所花费的时间，设单表大小为 $M$。在不进行计算分离时，消耗的时间 $T = Mt$。但在分离过后，全过程时间为：
-
-        $$
-        T' = \dfrac{M}{m} + \dfrac{9999}{m} \times t < Mt, \quad if\ m > \dfrac{1}{t} + \dfrac{9999}{M}
-        $$
+    \begin{frame}{软件变更的获取}
+        \begin{block}{git diff 的读取}
+            通过给定的两个提交 Hash ID，借助开源工具 jgit 使用 kotlin 抽象并结构化源文件差异。\cite{diff-extractor}得到从变更文件到存在变更的类内方法的映射关系。（待完善）
+        \end{block}
+        \begin{figure}
+            \centering \includegraphics[width=4.3in]{contents/figure/diff_extractor_readme.png}
+            \label{fig:diff-extractor-readme}
+        \end{figure}
     \end{frame}
 
-
-\section{组件设计}
-    % “表格” 示例
-    \begin{frame}{决策系统设计}
-        \begin{table}[]
-            \centering
-            \begin{tabular}{c|c|c}
-            \textbf{运行时间} & \textbf{实验组} & \textbf{对照组（单位 1）} \\
-            \hline
-                设计模式使用 vs. 不使用 & 1.1 & 1 \\
-                Julia vs. Python & 0.7 & 1 \\
-                负载均衡集群 vs. 单机 & 0.5 & 1 \\
-                集群分布式缓存 vs. 无缓存 & 0.8 & 1 \\
-            \end{tabular}
-            \caption{各技术对决策系统的影响}
-            \label{tab:tech-strategy}
-        \end{table}
+    \begin{frame}{模块间分析}
+        \begin{block}{基于 AOSP 底层构建系统 ninja 的文件依赖关系分析}
+            \small ninja 中使用 “rule” 与 “build” 抽象和实例化构建过程。通过对 ninja 已有数据结构的利用，使用 C++ 编写适配 ninja 的工具 “OriginTool”，得到变更节点影响的所有节点。\cite{ninja-hacked}
+        \end{block}
+        \begin{block}{依赖关系有向无环图生成}
+            \small 借助开源工具 graphviz (in javascript) 提供的对节点的抽象，对 ninja “OriginTool” 的输出文件进行可视化。\cite{deps-reflector}
+        \end{block}
 
         \begin{columns}
-            \small
             \column{.5\textwidth}
-            \begin{itemize}
-                \item 使用 Strategy 设计模式。
-                \item 使用 Julia 高效计算矩阵乘法。
-                \item 对归因系统暴露幂等性 API，使用计算集群增强计算能力。
-            \end{itemize}
-
+            \begin{figure}
+                \centering \includegraphics[width=1.2in, height=1in]{contents/figure/ninja_hacked_output.png}
+                \label{fig:ninja-hacked-output}
+            \end{figure}
             \column{.5\textwidth}
-            \begin{itemize}
-                \item 采用负载均衡，平衡集群中各处理机的负载。
-                \item 采用分布式缓存技术，加快集群整体对高频特殊输入的反应。
-            \end{itemize}
+            \begin{figure}
+                \centering \includegraphics[width=1.8in, height=1in]{contents/figure/ninja_logic.png}
+                \label{fig:ninja-logic}
+            \end{figure}
         \end{columns}
     \end{frame}
 
-    % “引用” 示例
-    \begin{frame}{通知系统设计}
-        著名哲人 skyleaworlder 有言：“内卷是可以被扼杀在摇篮中的。"\cite{involution} 只要在检测到疑似内卷行为后做到及时响应，由专业技术人员发起干涉，就有很相当概率阻止永夜势力的扩张。
-
-        通知系统需要具备以下几个方面特性：
-        \begin{enumerate}
-            \item 即时性。内卷极易滋生壮大，通知专业技术人员的时间应该尽可能短。
-            \item 高可用性。内卷行为来势汹汹，需要保证通知系统推送功能在高并发环境下的高可用性。
-        \end{enumerate}
-
-        自然卷说过：“内卷是凡人在挣扎中写下的血与泪的史诗。"\cite{undergrads_inv} 这份 “扭曲的美” 不应存于世间。
+    \begin{frame}{模块内分析}
+        \begin{block}{调用图的生成}
+            \small 使用程序间分析作为 AOSP Frameworks 模块内分析的主要途径。
+            借助 JVM 字节码操作库 bcel，使用 Java 对 jar 内部 class 文件中字段的读取，找到方法声明及调用点，跨 class 文件构建方法调用图。\cite{cg-generator}
+        \end{block}
+        \begin{figure}
+            \centering \includegraphics[width=4in]{contents/figure/cg_generator_output.png}
+            \label{fig:cg-genrator-output}
+        \end{figure}
     \end{frame}
